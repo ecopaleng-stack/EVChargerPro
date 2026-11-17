@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10243a">
+<title>EV Charger Pro</title>
+<style>
+:root{--navy:#10243a;--blue:#176b87;--bg:#f3f6f8;--line:#dce4ea;--muted:#617181}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,Tahoma,sans-serif;color:#142536}
+header{background:linear-gradient(120deg,#10243a,#176b87);color:white;padding:22px 18px 26px}
+header h1{margin:0 0 6px;font-size:24px}header p{margin:0;color:#d8e8ef;font-size:13px}
+main{max-width:760px;margin:auto;padding:14px}
+nav{display:flex;gap:8px;overflow:auto;margin:0 0 12px}
+nav button,.btn{border:0;border-radius:12px;padding:11px 14px;background:#e0e9ef;color:#173247;font-weight:700;white-space:nowrap}
+nav button.active,.btn.primary{background:var(--blue);color:white}
+.card{background:white;border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 9px #19334a0b}
+h2{font-size:17px;margin:0 0 14px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+input,select{width:100%;padding:12px;border:1px solid #cbd7df;border-radius:10px;background:white;font-size:15px;color:#152b3b}
+.field{min-width:0}.wide{grid-column:1/-1}
+.btn{width:100%;margin-top:12px;font-size:15px;cursor:pointer}
+.result{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.metric{background:#eef5f8;border-radius:12px;padding:13px}.metric small{display:block;color:var(--muted);font-size:12px}.metric strong{display:block;font-size:21px;margin-top:5px}
+.warn{border-right:4px solid #d18b19;background:#fff7e7;padding:12px;border-radius:9px;font-size:13px;line-height:1.65;margin-top:12px}
+.ok{border-right:4px solid #25845c;background:#edf8f2;padding:12px;border-radius:9px;font-size:13px;line-height:1.6;margin-top:12px}
+.muted{color:var(--muted);font-size:12px;line-height:1.6}
+.hidden{display:none}.ltr{direction:ltr;text-align:left}
+@media(max-width:480px){.grid{grid-template-columns:1fr 1fr}header h1{font-size:21px}}
+</style></head>
+<body>
+<header><h1>⚡ EV Charger Pro</h1><p id="tagline">مساعد حسابات وتجهيز شواحن السيارات الكهربائية</p></header>
+<main>
+<nav><button class="active" onclick="tab('calc',this)" id="tabCalc">الحساب الكهربائي</button><button onclick="tab('settings',this)" id="tabSettings">الإعدادات</button><button onclick="tab('materials',this)" id="tabMaterials">المواد</button></nav>
+<section id="calc">
+<div class="card"><h2 id="calcTitle">بيانات الشاحن والمسار</h2>
+<div class="grid">
+<div class="field"><label id="lblPhase">نظام التغذية</label><select id="phase" onchange="phaseChanged()"><option value="1">فاز واحد</option><option value="3">ثلاثة فاز</option></select></div>
+<div class="field"><label id="lblPower">قدرة الشاحن (kW)</label><input id="power" type="number" min="0.1" step="0.1" value="7.4"></div>
+<div class="field"><label id="lblVoltage">الفولتية (V)</label><input id="voltage" type="number" min="1" value="220"></div>
+<div class="field"><label id="lblLength">طول المسار باتجاه واحد (m)</label><input id="length" type="number" min="1" value="30"></div>
+<div class="field"><label id="lblPf">معامل القدرة PF</label><input id="pf" type="number" min="0.1" max="1" step="0.01" value="0.99"></div>
+<div class="field"><label id="lblEff">الكفاءة</label><input id="eff" type="number" min="1" max="100" value="100"></div>
+<div class="field"><label id="lblMetal">مادة الموصل</label><select id="metal"><option value="cu">نحاس</option><option value="al">ألمنيوم</option></select></div>
+<div class="field"><label id="lblSize">المقطع المراد فحصه (mm²)</label><select id="size"><option>2.5</option><option>4</option><option>6</option><option>10</option><option>16</option><option>25</option><option>35</option><option>50</option><option>70</option><option>95</option><option>120</option></select></div>
+<div class="field"><label id="lblTemp">درجة حرارة الموصل التقديرية (°C)</label><input id="temp" type="number" min="20" max="120" value="70"></div>
+<div class="field"><label id="lblLimit">حد هبوط الجهد المستهدف (%)</label><input id="limit" type="number" min="0.1" max="20" step="0.1" value="3"></div>
+</div>
+<button class="btn primary" onclick="calculate()" id="calcBtn">احسب وافحص</button>
+</div>
+<div class="card hidden" id="output"><h2 id="resultTitle">نتيجة الحساب الأولي</h2><div class="result" id="metrics"></div><div id="status"></div><div id="candidates"></div></div>
+</section>
+<section id="settings" class="hidden"><div class="card"><h2 id="settingsTitle">إعدادات المشروع</h2><div class="grid">
+<div class="field"><label id="lblLang">لغة التطبيق</label><select id="lang" onchange="setLang()"><option value="ar">العربية</option><option value="en">English</option></select></div>
+<div class="field"><label id="lblStandard">المرجع الفني (للمراجعة)</label><select id="standard"><option>IEC</option><option>BS</option><option>NEC</option></select></div>
+<div class="field"><label id="lblDefault1">فولتية أحادي الفاز الافتراضية</label><input id="v1" type="number" value="220"></div>
+<div class="field"><label id="lblDefault3">فولتية ثلاثي الفاز الافتراضية</label><input id="v3" type="number" value="380"></div>\n<div class="field"><label id="lblCurrency">العملة الافتراضية</label><select id="currency"><option value="ILS">شيكل (₪)</option><option value="USD">دولار ($)</option><option value="JOD">دينار أردني (د.أ)</option><option value="EUR">يورو (€)</option></select></div>
+</div><p class="muted" id="standardNote">اختيار المعيار هنا يحدد مرجع المراجعة فقط. لم تُحمّل بعد جداول سعات التيار أو شروط الحماية المعتمدة؛ لذلك لا يصدر التطبيق اعتماداً نهائياً لمقطع الكابل أو القاطع.</p><button class="btn primary" onclick="saveSettings()" id="saveBtn">حفظ الإعدادات</button></div></section>
+<section id="materials" class="hidden"><div class="card"><h2 id="materialsTitle">قائمة المواد – نموذج أولي</h2><p id="materialsIntro">تُبنى القائمة النهائية بعد إدخال كتالوج المنتجات المعتمد لديك ومراجعة متطلبات الحماية الخاصة بالشاحن والموقع.</p>
+<div class="warn" id="materialsWarn">لا تختَر القاطع أو RCD أو SPD أو المفتاح أو المقبس اعتماداً على التيار وحده. يجب التحقق من تعليمات مصنع الشاحن، ونظام التأريض، وحماية DC 6 mA أو RCD Type B عند الاقتضاء، وقدرة القطع، وعدد الأقطاب، والتنسيق مع الحماية العليا.</div>
+<ul id="materialList"><li>كابل تغذية مناسب بعد التحقق من السعة الحرارية وهبوط الجهد</li><li>قاطع حماية معتمد ومتوافق مع الكابل</li><li>RCD / RCBO وفق متطلبات الشاحن والنظام</li><li>SPD عند الحاجة وفق تقييم الموقع والكود</li><li>مفتاح فصل، صندوق حماية، جلاند، أطراف، مواسير</li><li>موصل حماية PE وربط تساوي الجهد حسب التصميم</li></ul>
+</div></section>
+<p class="muted" id="footerNote">نسخة أولية للحسابات المساعدة. لا تستخدم النتائج وحدها لتنفيذ التركيب أو اختيار وسيلة الحماية. يلزم التحقق من جداول المعيار المحلي وبيانات المصنع والقياسات بالموقع.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+function tab(id,btn){['calc','settings','materials'].forEach(x=>$(x).classList.toggle('hidden',x!==id));document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));btn.classList.add('active')}
+function phaseChanged(){ $('voltage').value=$('phase').value==='1' ? $('v1').value : $('v3').value; }
+function saveSettings(){localStorage.setItem('evp_settings',JSON.stringify({lang:$('lang').value,standard:$('standard').value,v1:$('v1').value,v3:$('v3').value,currency:$('currency').value}));phaseChanged();alert($('lang').value==='ar'?'تم حفظ الإعدادات':'Settings saved');}
+const translations={
+en:{tagline:'EV charger installation calculation assistant',calc:'Electrical calculation',settings:'Settings',materials:'Materials',calcTitle:'Charger and route data',phase:'Supply system',p1:'Single-phase',p3:'Three-phase',power:'Charger power (kW)',voltage:'Voltage (V)',length:'One-way route length (m)',pf:'Power factor PF',eff:'Efficiency (%)',metal:'Conductor material',cu:'Copper',al:'Aluminium',size:'Conductor size to check (mm²)',temp:'Estimated conductor temperature (°C)',limit:'Target voltage-drop limit (%)',calcBtn:'Calculate and check',result:'Preliminary calculation',settingsTitle:'Project settings',lang:'App language',standard:'Technical reference',v1:'Default single-phase voltage',v3:'Default three-phase voltage',currency:'Default currency',save:'Save settings',standardNote:'The selected standard is a review reference only. Verified ampacity and protective-device tables are not loaded yet; the app therefore cannot certify a cable or breaker selection.',materialsTitle:'Materials list – prototype',materialsIntro:'The final bill of materials requires your approved product catalogue and a review of charger and site protection requirements.',materialsWarn:'Do not select a breaker, RCD, SPD, switch or socket from current alone. Verify charger instructions, earthing arrangement, DC 6 mA detection / Type B RCD requirements where applicable, breaking capacity, poles and upstream coordination.',footer:'Prototype for assisting calculations only. Do not use results alone for installation or protective-device selection. Verify local standard tables, manufacturer data and site measurements.',current:'Design current',drop:'Estimated voltage drop',dropPct:'Voltage drop',resistance:'Conductor resistance used',candidates:'Voltage-drop-only candidate sizes',warning:'This is not a cable-sizing approval. Ampacity, installation method, grouping, ambient temperature, insulation, short-circuit withstand, disconnection time, earthing and local rules are not verified.',pass:'Selected size meets the entered voltage-drop target only.',fail:'Selected size exceeds the entered voltage-drop target.',missing:'Check that all values are positive and PF is between 0 and 1.'},
+ar:{tagline:'مساعد حسابات وتجهيز شواحن السيارات الكهربائية',calc:'الحساب الكهربائي',settings:'الإعدادات',materials:'المواد',calcTitle:'بيانات الشاحن والمسار',phase:'نظام التغذية',p1:'فاز واحد',p3:'ثلاثة فاز',power:'قدرة الشاحن (kW)',voltage:'الفولتية (V)',length:'طول المسار باتجاه واحد (m)',pf:'معامل القدرة PF',eff:'الكفاءة (%)',metal:'مادة الموصل',cu:'نحاس',al:'ألمنيوم',size:'المقطع المراد فحصه (mm²)',temp:'درجة حرارة الموصل التقديرية (°C)',limit:'حد هبوط الجهد المستهدف (%)',calcBtn:'احسب وافحص',result:'نتيجة الحساب الأولي',settingsTitle:'إعدادات المشروع',lang:'لغة التطبيق',standard:'المرجع الفني',v1:'فولتية أحادي الفاز الافتراضية',v3:'فولتية ثلاثي الفاز الافتراضية',currency:'العملة الافتراضية',save:'حفظ الإعدادات',standardNote:'اختيار المعيار هنا يحدد مرجع المراجعة فقط. لم تُحمّل بعد جداول سعات التيار أو شروط الحماية المعتمدة؛ لذلك لا يصدر التطبيق اعتماداً نهائياً لمقطع الكابل أو القاطع.',materialsTitle:'قائمة المواد – نموذج أولي',materialsIntro:'تُبنى القائمة النهائية بعد إدخال كتالوج المنتجات المعتمد لديك ومراجعة متطلبات الحماية الخاصة بالشاحن والموقع.',materialsWarn:'لا تختَر القاطع أو RCD أو SPD أو المفتاح أو المقبس اعتماداً على التيار وحده. يجب التحقق من تعليمات مصنع الشاحن، ونظام التأريض، وحماية DC 6 mA أو RCD Type B عند الاقتضاء، وقدرة القطع، وعدد الأقطاب، والتنسيق مع الحماية العليا.',footer:'نسخة أولية للحسابات المساعدة. لا تستخدم النتائج وحدها لتنفيذ التركيب أو اختيار وسيلة الحماية. يلزم التحقق من جداول المعيار المحلي وبيانات المصنع والقياسات بالموقع.',current:'تيار التصميم',drop:'هبوط الجهد التقديري',dropPct:'نسبة هبوط الجهد',resistance:'مقاومة الموصل المستخدمة',candidates:'مقاطع تحقق هبوط الجهد فقط',warning:'هذه ليست موافقة على اختيار الكابل. لم يتم التحقق من سعة التيار، وطريقة التمديد، والتجميع، وحرارة الجو، والعزل، وتحمل القصر، وزمن الفصل، والتأريض، والمتطلبات المحلية.',pass:'المقطع المختار يحقق حد هبوط الجهد المدخل فقط.',fail:'المقطع المختار يتجاوز حد هبوط الجهد المدخل.',missing:'تحقق من أن القيم موجبة وأن PF بين 0 و1.'}
+};
+let lang='ar';
+function setLang(){
+ lang=$('lang').value;let t=translations[lang];
+ document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';
+ const map={tagline:'tagline',calcTitle:'calcTitle',lblPhase:'phase',lblPower:'power',lblVoltage:'voltage',lblLength:'length',lblPf:'pf',lblEff:'eff',lblMetal:'metal',lblSize:'size',lblTemp:'temp',lblLimit:'limit',calcBtn:'calcBtn',tabCalc:'calc',tabSettings:'settings',tabMaterials:'materials',settingsTitle:'settingsTitle',lblLang:'lang',lblStandard:'standard',lblDefault1:'v1',lblDefault3:'v3',lblCurrency:'currency',saveBtn:'save',standardNote:'standardNote',materialsTitle:'materialsTitle',materialsIntro:'materialsIntro',materialsWarn:'materialsWarn',footerNote:'footer'};
+ Object.keys(map).forEach(k=>$(k).textContent=t[map[k]]);
+ $('phase').options[0].text=t.p1;$('phase').options[1].text=t.p3;
+ $('metal').options[0].text=t.cu;$('metal').options[1].text=t.al;
+ $('calcBtn').textContent=t.calcBtn;
+}
+function calculate(){
+ const phase=+$('phase').value, P=+$('power').value*1000,V=+$('voltage').value,L=+$('length').value,pf=+$('pf').value,eff=+$('eff').value/100,S=+$('size').value,T=+$('temp').value,limit=+$('limit').value;
+ const t=translations[lang];
+ if(!(P>0&&V>0&&L>0&&pf>0&&pf<=1&&eff>0&&eff<=1&&S>0&&T>=20&&limit>0)){alert(t.missing);return;}
+ const I=phase===1?P/(V*pf*eff):P/(Math.sqrt(3)*V*pf*eff);
+ const rho20=$('metal').value==='cu'?0.017241:0.028264;
+ const alpha=$('metal').value==='cu'?0.00393:0.00403;
+ const rho=rho20*(1+alpha*(T-20));
+ const factor=phase===1?2:Math.sqrt(3);
+ const dV=factor*L*I*rho/S;
+ const pct=dV/V*100;
+ const fmt=(x,n=2)=>Number(x).toFixed(n);
+ $('output').classList.remove('hidden');
+ $('resultTitle').textContent=t.result;
+ $('metrics').innerHTML=[
+ [t.current,fmt(I)+' A'],[t.drop,fmt(dV)+' V'],[t.dropPct,fmt(pct)+' %'],[t.resistance,fmt(rho/S*1000,3)+' mΩ/m']
+ ].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong>'+x[1]+'</strong></div>').join('');
+ $('status').innerHTML='<div class="'+(pct<=limit?'ok':'warn')+'">'+(pct<=limit?t.pass:t.fail)+'</div><div class="warn">'+t.warning+'</div>';
+ const sizes=[2.5,4,6,10,16,25,35,50,70,95,120,150,185,240];
+ const candidates=sizes.map(s=>({s,p:factor*L*I*rho/s/V*100})).filter(x=>x.p<=limit);
+ $('candidates').innerHTML='<h3>'+t.candidates+'</h3><p class="muted">'+(candidates.length?candidates.map(x=>x.s+' mm² ('+fmt(x.p)+'%)').join(' · '):'لا يوجد مقطع ضمن القائمة يحقق الحد المدخل')+'</p>';
+}
+(function init(){try{let s=JSON.parse(localStorage.getItem('evp_settings')||'{}');if(s.lang)$('lang').value=s.lang;if(s.standard)$('standard').value=s.standard;if(s.v1)$('v1').value=s.v1;if(s.v3)$('v3').value=s.v3;if(s.currency)$('currency').value=s.currency;}catch(e){}lang=$('lang').value;setLang();phaseChanged();})();
+</script></body></html>
